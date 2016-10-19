@@ -1,0 +1,15 @@
+Source: epics-snmp
+Section: unknown
+Priority: optional
+Maintainer: Daron Chabot <chabot@frib.msu.edu>
+Build-Depends: debhelper (>= 9), autotools-dev
+Standards-Version: 3.9.5
+Homepage: <insert the upstream URL, if relevant>
+#Vcs-Git: git://anonscm.debian.org/collab-maint/epics-snmp.git
+#Vcs-Browser: http://anonscm.debian.org/?p=collab-maint/epics-snmp.git;a=summary
+
+Package: epics-snmp
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>
