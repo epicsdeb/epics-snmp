@@ -430,6 +430,9 @@ class devSnmp_pv
 
     const char *errorString(void);
 
+    const configDataPV *configData(void);
+    long configFlags(void);
+
   protected:
     devSnmp_manager  *pOurMgr;
     devSnmp_group    *pOurGroup;
