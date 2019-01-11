@@ -1,2 +1,3 @@
 0001-BLD-update-configure-snippets.patch
 0002-FIX-death-to-dos-eols.patch
+0003-Remove-execute-flag-from-MIB-files.patch
