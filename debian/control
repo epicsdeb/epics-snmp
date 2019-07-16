@@ -2,10 +2,10 @@ Source: epics-snmp
 Section: libdevel
 Priority: optional
 Maintainer: Martin Konrad <konrad@frib.msu.edu>
-Build-Depends: debhelper (>= 9), epics-debhelper (>= 8.14~),
+Build-Depends: debhelper (>= 10), epics-debhelper (>= 8.14~),
                epics-dev,
                libsnmp-dev,
-Standards-Version: 3.9.6
+Standards-Version: 4.3.0
 Homepage: https://groups.nscl.msu.edu/controls/files/devSnmp.html
 Vcs-Git: https://stash.frib.msu.edu/projects/EPICS/repos/epics-snmp.git
 Vcs-Browser: https://stash.frib.msu.edu/projects/EPICS/repos/epics-snmp
