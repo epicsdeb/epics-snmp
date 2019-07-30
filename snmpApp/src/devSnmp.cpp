@@ -6,6 +6,18 @@
   by J.Priller  NSCL/FRIB  priller@frib.msu.edu
 */
 
+#define OUR_VERSION_MAJOR       1
+#define OUR_VERSION_MINOR       0
+#define OUR_VERSION_REVISION    0
+#define OUR_VERSION_PATCHLEVEL  1
+#define _STR_HELPER(x) #x
+#define _STR(x) _STR_HELPER(x)
+#define OUR_VERSION_STRING "devSnmp " \
+                           _STR(OUR_VERSION_MAJOR)    "." \
+                           _STR(OUR_VERSION_MINOR)    "." \
+                           _STR(OUR_VERSION_REVISION) "." \
+                           _STR(OUR_VERSION_PATCHLEVEL)
+
 #ifdef SHOW_ERROR_999
 // undefine items below NOT set given record type val field on read error
 #define AI_ON_READ_ERROR_VALUE  -999.999
@@ -39,6 +51,8 @@
 #include <recSup.h>
 #include <link.h>
 #include <macLib.h>
+#include <menuScan.h>
+#include <menuConvert.h>
 #include <epicsStdlib.h>
 #include <epicsExport.h>
 #include <epicsExit.h>
@@ -61,6 +75,7 @@
 #define SPECIAL_FLAG_HEXBITS       0x0002
 #define SPECIAL_FLAG_REVERSE_BITS  0x0004
 #define SPECIAL_FLAG_USE_NATIVE    0x0008
+#define SPECIAL_FLAG_RVAL          0x0010
 typedef struct {
   char flagChar;
   unsigned long flagValue;
@@ -70,6 +85,7 @@ static specialFlag specialFlagArray[] = {
   { 'h', SPECIAL_FLAG_HEXBITS      },
   { 'r', SPECIAL_FLAG_REVERSE_BITS },
   { 'n', SPECIAL_FLAG_USE_NATIVE   },
+  { 'R', SPECIAL_FLAG_RVAL         },
   { 0,   0                         }
 };
 
@@ -2146,6 +2162,16 @@ devSnmp_pv::~devSnmp_pv(void)
   // we don't delete OID object, it belongs to our group
 }
 //--------------------------------------------------------------------
+const configDataPV *devSnmp_pv::configData(void)
+{
+  return(&oidExtra);
+}
+//--------------------------------------------------------------------
+long devSnmp_pv::configFlags(void)
+{
+  return(oidExtra.special_flags);
+}
+//--------------------------------------------------------------------
 const char *devSnmp_pv::devSnmp_pv::errorString(void)
 {
   return(lastError);
@@ -3647,6 +3673,7 @@ void devSnmp_manager::report(int level, char *match)
   double r_loopps = (r_sec < 0.01) ? 0.0 : (readTask_loops / r_sec);
   double s_sec = sendTask_start.elapsedSeconds(NULL);
   double s_loopps = (s_sec < 0.01) ? 0.0 : (sendTask_loops / s_sec);
+  printf("version         : %s\n",OUR_VERSION_STRING);
   printf("read task loops : %ld (%.1lf per sec)\n",readTask_loops,r_loopps);
   printf("send task loops : %ld (%.1lf per sec)\n",sendTask_loops,s_loopps);
   printf("active requests : %d\n",activeRequests);
@@ -4115,7 +4142,6 @@ static long snmpAiInit(struct aiRecord *pai)
     return(S_db_badField);
   }
 
-  pai->udf = false;
   return(epicsOk);
 }
 //--------------------------------------------------------------------
@@ -4123,7 +4149,6 @@ static long snmpAiRead(struct aiRecord *pai)
 {
   devSnmp_pv *pPV;
   epicsStatus status = epicsError;
-  double new_val;
 
   if (pai->dpvt == NULL)
     return(epicsError);
@@ -4132,9 +4157,29 @@ static long snmpAiRead(struct aiRecord *pai)
 
   status = -1;
 
-  if (pPV->getValueDouble(&new_val)) {
-    pai->val = new_val;
-    status = 2;
+  if (pPV->configFlags() & SPECIAL_FLAG_RVAL) {
+    // if RVAL flag is specified, fetch int value to RVAL field
+    // record will do scale/conversion
+    long new_val;
+    if (! pPV->getValueLong(&new_val))
+      status = -1;
+    else {
+      pai->rval = new_val;
+      status = 0;
+    }
+  } else {
+    // otherwise we treat return value as already scaled
+    double new_val;
+    if (! pPV->getValueDouble(&new_val)) {
+      status = -1;
+    } else {
+      pai->val = new_val;
+      status = 2;
+    }
+  }
+
+  if (status >= 0) {
+    pai->udf = false;
   } else {
 #ifdef AI_ON_READ_ERROR_VALUE
     pai->val = AI_ON_READ_ERROR_VALUE;
@@ -4177,7 +4222,6 @@ static long snmpLiInit(struct longinRecord *pli)
     return(S_db_badField);
   }
 
-  pli->udf = false;
   return(epicsOk);
 }
 //--------------------------------------------------------------------
@@ -4196,6 +4240,7 @@ static long snmpLiRead(struct longinRecord *pli)
 
   if (pPV->getValueLong(&new_val)) {
     pli->val = new_val;
+    pli->udf = false;
     status = epicsOk;
   } else {
 #ifdef LI_ON_READ_ERROR_VALUE
@@ -4239,7 +4284,6 @@ static long snmpSiInit(struct stringinRecord *psi)
     return(S_db_badField);
   }
 
-  psi->udf = false;
   return(epicsOk);
 }
 //--------------------------------------------------------------------
@@ -4259,6 +4303,7 @@ static long snmpSiRead(struct stringinRecord *psi)
   if (pPV->getValueString(val,sizeof(val))) {
     memset(psi->val, '\0', 40);
     strcpy(psi->val, val);
+    psi->udf = false;
     status = epicsOk;
   } else {
 #ifdef SI_ON_READ_ERROR_VALUE
@@ -4315,7 +4360,6 @@ static epicsStatus snmpWfInit(struct waveformRecord *pwf)
         break;
   }
 
-  pwf->udf = false;
   return(status);
 }
 //--------------------------------------------------------------------
@@ -4376,6 +4420,7 @@ static epicsStatus snmpWfRead(struct waveformRecord *pwf)
         }
       }
     }
+    pwf->udf = false;
   } else {
     status = recGblSetSevr(pwf, READ_ALARM, INVALID_ALARM);
     if (status && (pwf->stat != READ_ALARM || pwf->sevr != INVALID_ALARM)) {
@@ -4422,13 +4467,13 @@ static long snmpAoInit(struct aoRecord *pao)
      periodically updated with value from the remote host */
   pPV->setPeriodicCallback(snmpAoReadback,(snmpPassivePollMSec / 1000.0));
 
-  pao->udf = false;
   return(epicsOk);
 }
 //--------------------------------------------------------------------
 static long snmpAoWrite(struct aoRecord *pao)
 {
   devSnmp_pv *pPV;
+  long status = epicsOk;
 
   if (pao->dpvt == NULL)
     return(epicsError);
@@ -4439,26 +4484,57 @@ static long snmpAoWrite(struct aoRecord *pao)
      just report success */
   if (pPV->doingProcess()) return(epicsOk);
 
-  // test to make sure value is valid
-  if (isnan(pao->val)) {
-    if (snmpDebugLevel)
-      printf("----- devSnmp ERROR: AO setting %s to invalid number!\n",pao->name);
-    return(epicsError);
+  char tmp[40];
+  if (pPV->configFlags() & SPECIAL_FLAG_RVAL) {
+    // RVAL specified
+    sprintf(tmp,"%d",pao->rval);
+  } else {
+    // not RVAL, use float value directly
+    // test to make sure value is valid
+    if (isnan(pao->val)) {
+      if (snmpDebugLevel)
+        printf("----- devSnmp ERROR: AO setting %s to invalid number!\n",pao->name);
+      return(epicsError);
+    }
+    // fill in set data
+    // guard against negative zero, it annoys some devices
+    if (strstr(pao->desc,"SETDBG")) pPV->debugSetStart();
+    double outv = pao->val;
+    if (local_isNegativeZero(outv)) outv = 0.0;
+    sprintf(tmp,"%lg",outv);
   }
 
-  // fill in set data
-  // guard against negative zero, it annoys some devices
-  if (strstr(pao->desc,"SETDBG")) pPV->debugSetStart();
-  double outv = pao->val;
-  if (local_isNegativeZero(outv)) outv = 0.0;
-  long status = epicsOk;
-  char tmp[40];
-  sprintf(tmp,"%lg",outv);
+  status = epicsOk;
   pPV->set(tmp);
+  pao->udf = false;
   if (snmpDebugLevel)
     printf("----- devSnmp AO setting %s to [%s] ...\n",pao->name,tmp);
 
   return(status);
+}
+//--------------------------------------------------------------------
+static double snmpAoBackConvert(struct aoRecord *pao, long dint)
+{
+  /* back-convert raw value into val (copied from ao init) */
+  double dbl = (double)dint + (double)pao->roff;
+  if (pao->aslo != 0.0) dbl *= pao->aslo;
+  dbl += pao->aoff;
+
+  switch (pao->linr) {
+    case menuConvertNO_CONVERSION:
+        return(dbl);
+        break;
+
+    case menuConvertLINEAR:
+    case menuConvertSLOPE:
+        dbl = dbl*pao->eslo + pao->eoff;
+        return(dbl);
+        break;
+
+    default:
+        if (cvtRawToEngBpt(&dbl,pao->linr,pao->init,(void **)&pao->pbrk,&pao->lbrk) != 0) return(dint);
+        return(dbl);
+  }
 }
 //--------------------------------------------------------------------
 static long snmpAoReadback(devSnmp_pv *pPV)
@@ -4470,9 +4546,22 @@ static long snmpAoReadback(devSnmp_pv *pPV)
 
   status = -1;
 
-  if (pPV->getValueDouble(&new_val)) {
-    status = 2;
+  if (pPV->configFlags() & SPECIAL_FLAG_RVAL) {
+    // RVAL flag specified
+    // we need to back-convert
+    long new_dint_val = 0;
+    if (pPV->getValueLong(&new_dint_val)) {
+      status = 0;
+      new_val = snmpAoBackConvert(pao,new_dint_val);
+    }
+  } else {
+    // not RVAL, use float val directly
+    if (pPV->getValueDouble(&new_val)) {
+      status = 2;
+    }
+  }
 
+  if (status >= 0) {
     /* if it hasn't been long enough since last setting sent, skip
        checking versus our current val field (don't want our val
        field over-written if pPV hasn't had time to process
@@ -4495,6 +4584,8 @@ static long snmpAoReadback(devSnmp_pv *pPV)
       recGblResetAlarms(pao);
       process_record = true;
     }
+
+    pao->udf = false;
 
   } else {
     status = recGblSetSevr(pao, READ_ALARM, INVALID_ALARM);
@@ -4545,7 +4636,6 @@ static long snmpLoInit(struct longoutRecord *plo)
      periodically updated with value from the remote host */
   pPV->setPeriodicCallback(snmpLoReadback,(snmpPassivePollMSec / 1000.0));
 
-  plo->udf = false;
   return(epicsOk);
 }
 //--------------------------------------------------------------------
@@ -4567,6 +4657,7 @@ static long snmpLoWrite(struct longoutRecord *plo)
   char tmp[40];
   sprintf(tmp,"%ld", (long) plo->val);
   pPV->set(tmp);
+  plo->udf = false;
 
   return(status);
 }
@@ -4614,6 +4705,9 @@ static long snmpLoReadback(devSnmp_pv *pPV)
       recGblResetAlarms(plo);
       process_record = true;
     }
+
+    plo->udf = false;
+
   } else {
     status = recGblSetSevr(plo, READ_ALARM, INVALID_ALARM);
     if (status && (plo->stat != READ_ALARM || plo->sevr != INVALID_ALARM)) {
@@ -4663,7 +4757,6 @@ static long snmpSoInit(struct stringoutRecord *pso)
      periodically updated with value from the remote host */
   pPV->setPeriodicCallback(snmpSoReadback,(snmpPassivePollMSec / 1000.0));
 
-  pso->udf = false;
   return(epicsOk);
 }
 //--------------------------------------------------------------------
@@ -4683,6 +4776,7 @@ static long snmpSoWrite(struct stringoutRecord *pso)
   // fill in set data
   long status = epicsOk;
   pPV->set(pso->val);
+  pso->udf = false;
 
   if (snmpDebugLevel)
     printf("----- devSnmp SO setting %s to [%s] ...\n",pso->name,pso->val);
@@ -4723,6 +4817,9 @@ static long snmpSoReadback(devSnmp_pv *pPV)
       recGblResetAlarms(pso);
       process_record = true;
     }
+
+    pso->udf = false;
+
   } else {
     status = recGblSetSevr(pso, READ_ALARM, INVALID_ALARM);
     if (status && (pso->stat != READ_ALARM || pso->sevr != INVALID_ALARM)) {

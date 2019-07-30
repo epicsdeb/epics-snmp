@@ -39,7 +39,12 @@ PROD_IOC = snmp
 DBD += snmp.dbd
 
 # snmp.dbd will be made up from these files:
-snmp_DBD += base.dbd
+ifneq ($(BASE_3_15),YES)
+  # add base.dbd if NOT R3.15.x
+  # generates errors in R3.14.x if this isn't included
+  # generates errors in R3.15.x if it is...
+  snmp_DBD += base.dbd
+endif
 snmp_DBD += devSnmp.dbd
 
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd

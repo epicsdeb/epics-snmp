@@ -7,9 +7,9 @@
 
 <BODY>
 <H1>EPICS SNMP Device Support Module (NSCL/FRIB)</H1>
-<B>Release 1.0.0.0</B><br>
+<B>Release 1.0.0.1</B><br>
 <B>by John Priller</B><br>
-<B>July 1, 2015</B><br>
+<B>October 24, 2016</B><br>
 
 <h2><u>Contents</u></h2>
 <ul>
@@ -36,6 +36,7 @@
       <li><a href="#gotcha_DiffVal">Devices that return different data than requested</a></li>
     </ul>
   </li>
+  <li><a href="#Versions">Version history</a></li>
   <li><a href="#Download">Download</a></li>
   <li><a href="#Support">Support</a></li>
 </ul>
@@ -69,8 +70,8 @@ snmpset for reading and writing SNMP variables, and snmpwalk for
 listing what variables a host makes available.</p>
 
 <p>NET-SNMP source code and binaries are available for a number of
-platforms, including Linux and Windows. This module has only been tested
-on Linux thus far, but in theory it should work on any platform EPICS
+platforms, including Linux and Windows. This module has been tested
+on Linux and OSX thus far, but in theory it should work on any platform EPICS
 and the NET-SNMP source code can be compiled for.</p>
 
 <h4 id="MIBfiles">MIB files for SNMP target devices</h4>
@@ -221,15 +222,20 @@ The format of the INP/OUT fields is:
   <tr><td>special_flags</td>
       <td><p>Optional/experimental.  In the future this will be a place
           to specify any configuration flags that might be needed to
-          parse the return string for the given variable. At present a
-          few flags are defined for testing and exploratory
-          purposes:</p>
+          parse/handle the return values for the given variable. At present a
+          few flags are defined for testing and exploratory purposes:</p>
+    <p>NOTE: flags are case sensitive, 'r' and 'R' are different.</p>
+    <p>NOTE: there should be no spaces between set_type and special_flags, and no spaces are allowed in special_flags.</p>
           <ul>
     <li>'p' squeezes all whitespace out of the returned string</li>
     <li>'h' signals parsing hex-encoded bytes separated by spaces, '01 4e 7f' for example</li>
     <li>'r' signals that the bit order of an integer should be inverted (host device annoyingly returns it as LSB...MSB)</li>
     <li>'n' use the native/opaque data type returned by the host if an appropriate one is returned
             (useful for obtaining higher precision of floats/doubles than string representation allows)</li>
+    <li>'r' signals that the bit order of an integer should be inverted (host device annoyingly returns it as LSB...MSB)</li>
+    <li>'R' (ai/ao only) use RVAL field, allow ai/ao record to define
+            scaling/conversion.  By default values read from remote devices are
+            considered already scaled.</li>
           </ul>
     <p>The 'h' and 'r' flags are useful for parsing BITS variables from
        Wiener/ISEG/MPODs. A better solution for these devices would be
@@ -485,7 +491,7 @@ for a helpful little perl script which provides a numeric definition such as:
      itself expands strings such as %(FOO) or %{FOO} to the value of the FOO
      environment variable so this can be used (%(W) for WIENER-CRATE-MIB::
      for example) to work around this limit.  Note that expansion of macros
-     of the form $(M) or ${M} will not work since these are expaneded too
+     of the form $(M) or ${M} will not work since these are expanded too
      early and the resulting string will still not fit into 80 characters.
      Another option is simply
      patching EPICS base code with a larger field length limit and
@@ -544,6 +550,33 @@ for a helpful little perl script which provides a numeric definition such as:
      <pre>   snmpwalk -m ALL -Cc -r 4 -t 15 -c public 192.168.54.62 crate</pre>
   </dd>
 </dl>
+
+<h2 id="Versions"><u>Version history</u></h2>
+        <p>1.0.0.1: Add 'R' (RVAL) special_flag.</p>
+
+        <p>1.0.0.0: Production release.  Fix for epicsScanDouble behavior change in R3.15.</p>
+        <p></P>
+
+        <p>RC9: Fix for problem with iocsh commands registration in static
+        builds (patch thanks to Jane Richards at TRIUMF).</p>
+        <p></P>
+
+        <p>RC8: Exposed SessionRetries and SessionTimeouts as parameters to
+        devSnmpSetParam.  Increased default timeout from 300000 usec (0.3 seconds) to
+        1000000 usec (1 second) on advice from <a href="mailto:jhthomas@lbl.gov">Jim Thomas</a>,
+        to better handle sporadic timeouts seen with some ISEG crates.  Unknown
+        as yet whether changing these on-the-fly will have any effect after
+        communication to remote hosts has begun, feedback appreciated.</p>
+        <p></P>
+
+        <p>RC7: Bug fixes.</p>
+        <p></P>
+
+        <p>RC6: Defensive code added to combat problems with devices not returning
+        correct variable list, other improvements.  Support for expansion of
+        environment variables in INP/OUT lines, some tweaks for OSX compilation
+        and a Wiener crate app provided by <a href="mailto:wenorum@lbl.gov">Eric Norum</a> (thanks!)</p>
+        <p></P>
 
 <h2 id="Download"><u>Download</u></h2>
 

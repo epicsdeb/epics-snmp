@@ -1,0 +1,57 @@
+From: Martin Konrad <konrad@frib.msu.edu>
+Date: Fri, 11 Jan 2019 18:31:26 -0500
+Subject: Remove execute flag from MIB files
+
+---
+ mibs/BRIDGE-MIB-rfc4188.txt             | 0
+ mibs/ENTITY-MIB-rfc4133.txt             | 0
+ mibs/IEEE8021-PAE-MIB-bridge-03.txt     | 0
+ mibs/IEEE8023-LAG-MIB.txt               | 0
+ mibs/MAU-MIB-rfc2668.txt                | 0
+ mibs/P-BRIDGE-MIB-rfc4363.txt           | 0
+ mibs/Q-BRIDGE-MIB-rfc4363.txt           | 0
+ mibs/RADIUS-AUTH-CLIENT-MIB-rfc2618.txt | 0
+ mibs/RMON2-MIB-rfc4502.txt              | 0
+ mibs/TOKEN-RING-RMON-MIB-rmonmib-01.txt | 0
+ 10 files changed, 0 insertions(+), 0 deletions(-)
+ mode change 100755 => 100644 mibs/BRIDGE-MIB-rfc4188.txt
+ mode change 100755 => 100644 mibs/ENTITY-MIB-rfc4133.txt
+ mode change 100755 => 100644 mibs/IEEE8021-PAE-MIB-bridge-03.txt
+ mode change 100755 => 100644 mibs/IEEE8023-LAG-MIB.txt
+ mode change 100755 => 100644 mibs/MAU-MIB-rfc2668.txt
+ mode change 100755 => 100644 mibs/P-BRIDGE-MIB-rfc4363.txt
+ mode change 100755 => 100644 mibs/Q-BRIDGE-MIB-rfc4363.txt
+ mode change 100755 => 100644 mibs/RADIUS-AUTH-CLIENT-MIB-rfc2618.txt
+ mode change 100755 => 100644 mibs/RMON2-MIB-rfc4502.txt
+ mode change 100755 => 100644 mibs/TOKEN-RING-RMON-MIB-rmonmib-01.txt
+
+diff --git a/mibs/BRIDGE-MIB-rfc4188.txt b/mibs/BRIDGE-MIB-rfc4188.txt
+old mode 100755
+new mode 100644
+diff --git a/mibs/ENTITY-MIB-rfc4133.txt b/mibs/ENTITY-MIB-rfc4133.txt
+old mode 100755
+new mode 100644
+diff --git a/mibs/IEEE8021-PAE-MIB-bridge-03.txt b/mibs/IEEE8021-PAE-MIB-bridge-03.txt
+old mode 100755
+new mode 100644
+diff --git a/mibs/IEEE8023-LAG-MIB.txt b/mibs/IEEE8023-LAG-MIB.txt
+old mode 100755
+new mode 100644
+diff --git a/mibs/MAU-MIB-rfc2668.txt b/mibs/MAU-MIB-rfc2668.txt
+old mode 100755
+new mode 100644
+diff --git a/mibs/P-BRIDGE-MIB-rfc4363.txt b/mibs/P-BRIDGE-MIB-rfc4363.txt
+old mode 100755
+new mode 100644
+diff --git a/mibs/Q-BRIDGE-MIB-rfc4363.txt b/mibs/Q-BRIDGE-MIB-rfc4363.txt
+old mode 100755
+new mode 100644
+diff --git a/mibs/RADIUS-AUTH-CLIENT-MIB-rfc2618.txt b/mibs/RADIUS-AUTH-CLIENT-MIB-rfc2618.txt
+old mode 100755
+new mode 100644
+diff --git a/mibs/RMON2-MIB-rfc4502.txt b/mibs/RMON2-MIB-rfc4502.txt
+old mode 100755
+new mode 100644
+diff --git a/mibs/TOKEN-RING-RMON-MIB-rmonmib-01.txt b/mibs/TOKEN-RING-RMON-MIB-rmonmib-01.txt
+old mode 100755
+new mode 100644
